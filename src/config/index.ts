@@ -57,10 +57,4 @@ export const config = {
     level: process.env.LOG_LEVEL || "info",
     prettyPrint: process.env.NODE_ENV !== "production",
   },
-
-  // Rate limiting para proteção contra ataques DoS
-  rateLimit: {
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // Limite de 100 requests por IP
-  },
 };

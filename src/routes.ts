@@ -7,16 +7,7 @@ import { config } from "./config";
 
 const routes = Router();
 
-/**
- * @swagger
- * /api/health:
- *   get:
- *     summary: Verifica o status da API
- *     tags: [Health]
- *     responses:
- *       200:
- *         description: API está funcionando corretamente
- */
+
 routes.get("/health", (req, res) => {
   res.status(200).json({
     status: "success",
