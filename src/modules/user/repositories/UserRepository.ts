@@ -5,7 +5,7 @@ import {
   UpdateUserDTO,
   UserListResponse,
 } from "../models/User";
-import { AppError } from "../../../shared/errors/AppError";
+import { AppError, ErrorType } from "../../../shared/errors/AppError";
 import { hash } from "bcrypt";
 
 class UserRepository {
@@ -50,6 +50,10 @@ class UserRepository {
   public async findByEmail(email: string): Promise<User | null> {
     const user = await prisma.user.findUnique({
       where: { email },
+      include: {
+        role: true,
+        status: true,
+      },
     });
 
     return user as User | null;
@@ -67,13 +71,13 @@ class UserRepository {
     // Verifica se já existe usuário com esse e-mail
     const existingUserEmail = await this.findByEmail(data.email);
     if (existingUserEmail) {
-      throw new AppError("Este e-mail já está em uso", 400);
+      throw new AppError("Este e-mail já está em uso", ErrorType.CONFLICT, 400);
     }
 
     // Verifica se já existe usuário com esse CPF
     const existingUserCpf = await this.findByCpf(data.cpf);
     if (existingUserCpf) {
-      throw new AppError("Este CPF já está cadastrado", 400);
+      throw new AppError("Este CPF já está cadastrado", ErrorType.CONFLICT, 400);
     }
 
     // Verifica se os IDs de role e status existem
@@ -82,7 +86,7 @@ class UserRepository {
     });
 
     if (!role) {
-      throw new AppError("Perfil (role) não encontrado", 400);
+      throw new AppError("Perfil (role) não encontrado", ErrorType.BAD_REQUEST, 400);
     }
 
     const status = await prisma.status.findUnique({
@@ -90,7 +94,7 @@ class UserRepository {
     });
 
     if (!status) {
-      throw new AppError("Status não encontrado", 400);
+      throw new AppError("Status não encontrado", ErrorType.BAD_REQUEST, 400);
     }
 
     // Criptografa a senha
@@ -114,14 +118,14 @@ class UserRepository {
     const user = await this.findById(id);
 
     if (!user) {
-      throw new AppError("Usuário não encontrado", 404);
+      throw new AppError("Usuário não encontrado", ErrorType.NOT_FOUND, 404);
     }
 
     // Se estiver atualizando o e-mail, verifica se já existe
     if (data.email && data.email !== user.email) {
       const existingUserEmail = await this.findByEmail(data.email);
       if (existingUserEmail) {
-        throw new AppError("Este e-mail já está em uso", 400);
+        throw new AppError("Este e-mail já está em uso", ErrorType.CONFLICT, 400);
       }
     }
 
@@ -129,7 +133,7 @@ class UserRepository {
     if (data.cpf && data.cpf !== user.cpf) {
       const existingUserCpf = await this.findByCpf(data.cpf);
       if (existingUserCpf) {
-        throw new AppError("Este CPF já está cadastrado", 400);
+        throw new AppError("Este CPF já está cadastrado", ErrorType.CONFLICT, 400);
       }
     }
 
@@ -140,7 +144,7 @@ class UserRepository {
       });
 
       if (!role) {
-        throw new AppError("Perfil (role) não encontrado", 400);
+        throw new AppError("Perfil (role) não encontrado", ErrorType.BAD_REQUEST, 400);
       }
     }
 
@@ -151,7 +155,7 @@ class UserRepository {
       });
 
       if (!status) {
-        throw new AppError("Status não encontrado", 400);
+        throw new AppError("Status não encontrado", ErrorType.BAD_REQUEST, 400);
       }
     }
 
@@ -179,7 +183,7 @@ class UserRepository {
     const user = await this.findById(id);
 
     if (!user) {
-      throw new AppError("Usuário não encontrado", 404);
+      throw new AppError("Usuário não encontrado", ErrorType.NOT_FOUND, 404);
     }
 
     await prisma.user.delete({

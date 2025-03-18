@@ -1,4 +1,4 @@
-import { sign, verify, JwtPayload } from "jsonwebtoken";
+import { sign, verify, JwtPayload, Secret } from "jsonwebtoken";
 import { compare } from "bcrypt";
 import { config } from "../../../config";
 import { AppError, ErrorType } from "../../../shared/errors/AppError";
@@ -87,13 +87,16 @@ class AuthService {
       },
     };
 
+    // Converter a chave secreta para o tipo Secret
+    const secretKey: Secret = config.auth.jwt.secret;
+
     // Gera o token de acesso
-    const token = sign(payload, config.auth.jwt.secret, {
+    const token = sign(payload, secretKey, {
       expiresIn: config.auth.jwt.expiresIn,
     });
 
     // Gera o refresh token com uma expiração mais longa
-    const refreshToken = sign({ sub: user.id }, config.auth.jwt.secret, {
+    const refreshToken = sign({ sub: user.id }, secretKey, {
       expiresIn: config.auth.jwt.refreshExpiresIn,
     });
 
@@ -105,10 +108,13 @@ class AuthService {
    */
   public async refreshToken(refreshToken: string): Promise<{ token: string }> {
     try {
+      // Converter a chave secreta para o tipo Secret
+      const secretKey: Secret = config.auth.jwt.secret;
+      
       // Verifica se o refresh token é válido
       const decoded = verify(
         refreshToken,
-        config.auth.jwt.secret
+        secretKey
       ) as JwtPayload;
 
       if (!decoded.sub) {
@@ -141,7 +147,7 @@ class AuthService {
         },
       };
 
-      const token = sign(payload, config.auth.jwt.secret, {
+      const token = sign(payload, secretKey, {
         expiresIn: config.auth.jwt.expiresIn,
       });
 

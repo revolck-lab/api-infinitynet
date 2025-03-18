@@ -5,7 +5,7 @@ import {
   UpdateRoleDTO,
   RoleListResponse,
 } from "../models/Role";
-import { AppError } from "../../../shared/errors/AppError";
+import { AppError, ErrorType } from "../../../shared/errors/AppError";
 
 class RoleRepository {
   public async findAll(page = 1, limit = 10): Promise<RoleListResponse> {
@@ -50,7 +50,7 @@ class RoleRepository {
     // Verifica se já existe role com esse nome
     const existingRole = await this.findByName(data.name);
     if (existingRole) {
-      throw new AppError("Já existe um perfil com este nome", 400);
+      throw new AppError("Já existe um perfil com este nome", ErrorType.CONFLICT, 400);
     }
 
     const role = await prisma.role.create({
@@ -64,14 +64,14 @@ class RoleRepository {
     const role = await this.findById(id);
 
     if (!role) {
-      throw new AppError("Perfil não encontrado", 404);
+      throw new AppError("Perfil não encontrado", ErrorType.NOT_FOUND, 404);
     }
 
     // Se estiver atualizando o nome, verifica se já existe
     if (data.name && data.name !== role.name) {
       const existingRole = await this.findByName(data.name);
       if (existingRole) {
-        throw new AppError("Já existe um perfil com este nome", 400);
+        throw new AppError("Já existe um perfil com este nome", ErrorType.CONFLICT, 400);
       }
     }
 
@@ -87,7 +87,7 @@ class RoleRepository {
     const role = await this.findById(id);
 
     if (!role) {
-      throw new AppError("Perfil não encontrado", 404);
+      throw new AppError("Perfil não encontrado", ErrorType.NOT_FOUND, 404);
     }
 
     // Verifica se há usuários usando este perfil
@@ -98,6 +98,7 @@ class RoleRepository {
     if (userCount > 0) {
       throw new AppError(
         "Este perfil está sendo utilizado por usuários e não pode ser excluído",
+        ErrorType.CONFLICT,
         400
       );
     }

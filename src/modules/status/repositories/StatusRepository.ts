@@ -5,7 +5,7 @@ import {
   UpdateStatusDTO,
   StatusListResponse,
 } from "../models/Status";
-import { AppError } from "../../../shared/errors/AppError";
+import { AppError, ErrorType } from "../../../shared/errors/AppError";
 
 class StatusRepository {
   public async findAll(page = 1, limit = 10): Promise<StatusListResponse> {
@@ -50,7 +50,7 @@ class StatusRepository {
     // Verifica se já existe status com esse nome
     const existingStatus = await this.findByName(data.name);
     if (existingStatus) {
-      throw new AppError("Já existe um status com este nome", 400);
+      throw new AppError("Já existe um status com este nome", ErrorType.CONFLICT, 400);
     }
 
     const status = await prisma.status.create({
@@ -64,14 +64,14 @@ class StatusRepository {
     const status = await this.findById(id);
 
     if (!status) {
-      throw new AppError("Status não encontrado", 404);
+      throw new AppError("Status não encontrado", ErrorType.NOT_FOUND, 404);
     }
 
     // Se estiver atualizando o nome, verifica se já existe
     if (data.name && data.name !== status.name) {
       const existingStatus = await this.findByName(data.name);
       if (existingStatus) {
-        throw new AppError("Já existe um status com este nome", 400);
+        throw new AppError("Já existe um status com este nome", ErrorType.CONFLICT, 400);
       }
     }
 
@@ -87,7 +87,7 @@ class StatusRepository {
     const status = await this.findById(id);
 
     if (!status) {
-      throw new AppError("Status não encontrado", 404);
+      throw new AppError("Status não encontrado", ErrorType.NOT_FOUND, 404);
     }
 
     // Verifica se há usuários usando este status
@@ -98,6 +98,7 @@ class StatusRepository {
     if (userCount > 0) {
       throw new AppError(
         "Este status está sendo utilizado por usuários e não pode ser excluído",
+        ErrorType.CONFLICT,
         400
       );
     }
