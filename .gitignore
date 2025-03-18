@@ -1,3 +1,52 @@
+# Dependências
 node_modules
-# Keep environment variables out of version control
+package-lock.json
+yarn.lock
+
+# Arquivos compilados
+dist
+build
+*.tsbuildinfo
+
+# Arquivos de ambiente
 .env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ferramentas de teste e cobertura
+coverage
+.nyc_output
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos temporários
+*.swp
+*.swo
+.tmp
+.temp
+
+# Prisma
+prisma/.env
+prisma/migrations/*_*
+
+# IDEs e editores
+/.idea
+/.vscode
+*.sublime-project
+*.sublime-workspace
+
+# Arquivos de build/debug
+debug
+debug.test
+
+# Outros
+.cache

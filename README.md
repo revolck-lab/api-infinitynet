@@ -1,82 +1,145 @@
 # API REST com Node.js e TypeScript
 
-Este projeto é uma API REST construída com Node.js e TypeScript, utilizando o framework Express e seguindo uma arquitetura modular inspirada em microserviços.
+API REST moderna construída com Node.js e TypeScript, seguindo práticas recomendadas de arquitetura, segurança e escalabilidade.
 
-## Requisitos
+## 🚀 Funcionalidades
+
+- ✅ Arquitetura modular inspirada em microserviços
+- ✅ Autenticação JWT com refresh tokens
+- ✅ Validação de dados com Zod
+- ✅ Tratamento centralizado de erros
+- ✅ Documentação automática da API com Swagger
+- ✅ Logs estruturados
+- ✅ Docker e Docker Compose para desenvolvimento e produção
+- ✅ Testes automatizados
+- ✅ Controle de acesso baseado em perfis (RBAC)
+
+## 📋 Requisitos
 
 - Node.js (v14 ou superior)
 - npm (v6 ou superior)
+- MySQL (v8 ou superior) ou Docker
 
-## Instalação
+## 🛠️ Instalação
 
-1. Clone este repositório
+### Usando npm
+
+1. Clone este repositório:
+   ```bash
+   git clone https://github.com/seu-usuario/api-typescript.git
+   cd api-typescript
+   ```
+
 2. Instale as dependências:
    ```bash
    npm install
    ```
-3. Copie o arquivo `.env.example` para `.env` e configure as variáveis de ambiente:
+
+3. Configure as variáveis de ambiente:
    ```bash
    cp .env.example .env
    ```
-4. Execute o servidor de desenvolvimento:
+   > Edite o arquivo `.env` com suas configurações
+
+4. Execute a migração do banco de dados:
+   ```bash
+   npm run prisma:migrate
+   ```
+
+5. Popule o banco de dados com dados iniciais:
+   ```bash
+   npm run seed
+   ```
+
+6. Inicie o servidor de desenvolvimento:
    ```bash
    npm run dev
    ```
 
-## Scripts disponíveis
+### Usando Docker
 
-- `npm run dev`: Inicia o servidor de desenvolvimento com hot-reload
-- `npm run build`: Compila o projeto TypeScript para JavaScript
-- `npm start`: Inicia o servidor em modo de produção (após build)
-- `npm run lint`: Executa o linter no código
+1. Clone este repositório:
+   ```bash
+   git clone https://github.com/seu-usuario/api-typescript.git
+   cd api-typescript
+   ```
 
-## Estrutura do Projeto
+2. Inicie os containers:
+   ```bash
+   npm run docker:up
+   ```
 
-A estrutura do projeto segue uma abordagem modular, onde cada recurso ou domínio tem seu próprio módulo com controllers, services, routes e models:
+3. Execute a migração e o seed:
+   ```bash
+   docker exec -it api-typescript npm run prisma:migrate
+   docker exec -it api-typescript npm run seed
+   ```
+
+## 🔍 Scripts disponíveis
+
+- `npm run dev` - Inicia o servidor de desenvolvimento com hot-reload
+- `npm run build` - Compila o projeto TypeScript para JavaScript
+- `npm start` - Inicia o servidor em modo de produção
+- `npm test` - Executa os testes
+- `npm run lint` - Verifica o código com ESLint
+- `npm run format` - Formata o código com Prettier
+- `npm run prisma:generate` - Gera o cliente Prisma
+- `npm run prisma:migrate` - Executa migrações pendentes
+- `npm run prisma:studio` - Abre a interface do Prisma Studio
+- `npm run seed` - Popula o banco de dados com dados iniciais
+- `npm run docker:up` - Inicia os containers Docker
+- `npm run docker:down` - Para os containers Docker
+
+## 🏗️ Estrutura do Projeto
 
 ```
 src/
-├── config/                # Configurações da aplicação
-├── modules/               # Módulos da aplicação
-│   └── user/              # Módulo de usuários
-│       ├── controllers/   # Controladores do módulo
-│       ├── models/        # Modelos e interfaces
-│       ├── routes/        # Rotas do módulo
-│       └── services/      # Serviços com a lógica de negócios
-├── shared/                # Recursos compartilhados entre módulos
-│   ├── errors/            # Classes de erro customizadas
+├── config/                # Configurações centralizadas
+├── modules/               # Módulos da aplicação (por domínio)
+│   ├── auth/              # Módulo de autenticação
+│   │   ├── controllers/   # Controladores
+│   │   ├── routes/        # Rotas
+│   │   ├── services/      # Serviços
+│   │   └── validations/   # Esquemas de validação
+│   ├── user/              # Módulo de usuários
+│   ├── role/              # Módulo de perfis
+│   └── status/            # Módulo de status
+├── shared/                # Recursos compartilhados
+│   ├── errors/            # Classes de erro
 │   ├── middlewares/       # Middlewares globais
-│   └── utils/             # Funções utilitárias
+│   └── services/          # Serviços compartilhados
 ├── app.ts                 # Configuração do Express
-├── routes.ts              # Registro de rotas dos módulos
-└── server.ts              # Ponto de entrada da aplicação
+├── routes.ts              # Registro de rotas
+└── server.ts              # Ponto de entrada
 ```
 
-## Endpoints da API
+## 🔐 Autenticação
 
-### Health Check
+A API utiliza dois métodos de autenticação:
 
-- `GET /api/health`: Verifica se a API está funcionando
+1. **JWT (JSON Web Token)** - Para autenticação de usuários
+   - Login: `POST /api/auth/login`
+   - Refresh Token: `POST /api/auth/refresh`
 
-### Usuários
+2. **API Key** - Para compatibilidade legada
+   - Inclua o cabeçalho `x-api-key` com a chave configurada no `.env`
 
-- `GET /api/users`: Lista todos os usuários (paginado)
-  - Query params: page, limit
-- `GET /api/users/:id`: Obtém um usuário específico
-- `POST /api/users`: Cria um novo usuário (requer autenticação)
-- `PUT /api/users/:id`: Atualiza um usuário existente (requer autenticação)
-- `DELETE /api/users/:id`: Remove um usuário (requer autenticação)
+## 📚 Documentação
 
-## Autenticação
+A documentação da API está disponível em:
 
-Esta API utiliza autenticação simples por chave API. Para acessar endpoints protegidos, inclua o cabeçalho `x-api-key` com a chave API configurada no arquivo `.env`.
+```
+http://localhost:3000/api-docs
+```
 
-## Extensão da Arquitetura
+## 📝 Contribuindo
 
-Esta arquitetura modular facilita a adição de novos recursos ao sistema:
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/amazing-feature`)
+3. Faça commit das suas alterações (`git commit -m 'Add some amazing feature'`)
+4. Faça push para a branch (`git push origin feature/amazing-feature`)
+5. Abra um Pull Request
 
-1. Crie um novo diretório dentro de `src/modules` para o novo recurso (ex: `product`)
-2. Siga a mesma estrutura do módulo de usuário, criando `controllers`, `services`, `models` e `routes`
-3. Registre as rotas do novo módulo no arquivo `src/routes.ts`
+## 📄 Licença
 
-Para adicionar integrações com bancos de dados, adicione um diretório `repositories` dentro do módulo ou em `src/shared` para repositórios compartilhados.
+Este projeto está licenciado sob a Licença ISC - veja o arquivo LICENSE para detalhes.
