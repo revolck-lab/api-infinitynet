@@ -1,9 +1,24 @@
 services:
   - type: web
-    name: api-typescript
+    name: api-infinitynet
     env: node
-    buildCommand: npm install && npm run build
-    startCommand: node dist/server.js
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && node dist/server.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DATABASE_URL
+        value: mysql://u794012971_infinity_net:Infinity_net123@sql.infinityfree.com:3306/u794012971_infinity_net
+      - key: PORT
+        value: 8080
+      - key: API_KEY
+        value: your_api_key_here
+      - key: JWT_SECRET
+        value: sua-chave-secreta-infinitynet-segura
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: CORS_ALLOWED_ORIGINS
+        value: "*"
