@@ -1,4 +1,8 @@
 import app from "./app";
+import { config } from "./config";
 
-// O server.ts apenas importa app.ts, que já inicia o servidor
-// Isso facilita os testes, pois podemos importar o app sem iniciar o servidor
+const port = config.server.port || 3000;
+
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
+});

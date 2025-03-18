@@ -10,11 +10,9 @@ dotenv.config();
 
 class App {
   public app: Express;
-  private port: number;
 
   constructor() {
     this.app = express();
-    this.port = Number(process.env.PORT) || 3000;
     this.middlewares();
     this.routes();
     this.errorHandling();
@@ -63,15 +61,7 @@ class App {
       }
     );
   }
-
-  public start(): void {
-    this.app.listen(this.port, () => {
-      console.log(`Servidor rodando na porta ${this.port}`);
-    });
-  }
 }
 
-const app = new App();
-app.start();
-
-export default app.app;
+// Exporta apenas a instância do Express
+export default new App().app;
