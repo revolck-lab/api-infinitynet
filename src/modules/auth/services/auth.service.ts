@@ -1,9 +1,11 @@
-import { sign, verify, JwtPayload, Secret } from "jsonwebtoken";
 import { compare } from "bcrypt";
 import { config } from "../../../config";
 import { AppError, ErrorType } from "../../../shared/errors/AppError";
 import userRepository from "../../user/repositories/UserRepository";
 import { User } from "../../user/models/User";
+
+// Importando jsonwebtoken usando require para evitar problemas de tipagem
+const jwt = require('jsonwebtoken');
 
 /**
  * Interface para resposta de autenticação
@@ -87,16 +89,13 @@ class AuthService {
       },
     };
 
-    // Converter a chave secreta para o tipo Secret
-    const secretKey: Secret = config.auth.jwt.secret;
-
-    // Gera o token de acesso
-    const token = sign(payload, secretKey, {
+    // Gera o token de acesso usando require
+    const token = jwt.sign(payload, config.auth.jwt.secret, {
       expiresIn: config.auth.jwt.expiresIn,
     });
 
     // Gera o refresh token com uma expiração mais longa
-    const refreshToken = sign({ sub: user.id }, secretKey, {
+    const refreshToken = jwt.sign({ sub: user.id }, config.auth.jwt.secret, {
       expiresIn: config.auth.jwt.refreshExpiresIn,
     });
 
@@ -108,14 +107,8 @@ class AuthService {
    */
   public async refreshToken(refreshToken: string): Promise<{ token: string }> {
     try {
-      // Converter a chave secreta para o tipo Secret
-      const secretKey: Secret = config.auth.jwt.secret;
-      
-      // Verifica se o refresh token é válido
-      const decoded = verify(
-        refreshToken,
-        secretKey
-      ) as JwtPayload;
+      // Verifica se o refresh token é válido usando require
+      const decoded = jwt.verify(refreshToken, config.auth.jwt.secret);
 
       if (!decoded.sub) {
         throw AppError.authentication("Token inválido");
@@ -147,7 +140,7 @@ class AuthService {
         },
       };
 
-      const token = sign(payload, secretKey, {
+      const token = jwt.sign(payload, config.auth.jwt.secret, {
         expiresIn: config.auth.jwt.expiresIn,
       });
 
