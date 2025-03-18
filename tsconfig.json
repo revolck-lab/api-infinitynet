@@ -8,7 +8,12 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "rootDir": "src",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["node", "express", "cors", "bcrypt", "jsonwebtoken", "uuid"],
+    "lib": ["es2016", "dom"],
+    "noImplicitAny": false,
+    "strictPropertyInitialization": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
