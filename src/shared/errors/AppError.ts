@@ -34,8 +34,15 @@ export class AppError extends Error {
     this.details = details;
     this.isOperational = isOperational;
 
-    // Preserva o stack trace
-    Error.captureStackTrace(this, this.constructor);
+    // Comentando a linha problemática
+    // Error.captureStackTrace(this, this.constructor);
+    
+    // Alternativa mais segura para capturar stack trace
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    } else {
+      this.stack = new Error().stack;
+    }
   }
 
   /**

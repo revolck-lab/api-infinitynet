@@ -3,7 +3,7 @@ services:
     name: api-infinitynet
     env: node
     plan: free
-    buildCommand: npm run render-build
+    buildCommand: npm install && npx prisma generate && tsc --skipLibCheck
     startCommand: npx prisma migrate deploy && node dist/server.js
     envVars:
       - key: NODE_ENV
