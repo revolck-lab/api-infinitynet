@@ -156,10 +156,23 @@
             font-weight: bold;
             margin-top: 1rem;
             transition: background-color 0.2s ease;
+            margin-right: 1rem;
         }
         
         .btn:hover {
             background-color: #2980b9;
+        }
+        
+        .btn-docs {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-docs:hover {
+            background-color: #1a2530;
+        }
+        
+        .buttons {
+            margin-top: 1.5rem;
         }
         
         @media (max-width: 768px) {
@@ -177,7 +190,6 @@
     <div class="container">
         <header>
             <h1>InfinityNet API</h1>
-            <p>API REST moderna para gerenciamento de usuários e autenticação</p>
         </header>
         
         <section class="api-info">
@@ -188,7 +200,10 @@
             </h2>
             <p>Esta API REST foi construída com Node.js e TypeScript, seguindo as melhores práticas de arquitetura, segurança e escalabilidade. Ela oferece um conjunto completo de endpoints para gerenciamento de usuários, perfis e autenticação.</p>
             
-            <a href="/api/health" class="btn">Verificar Status</a>
+            <div class="buttons">
+                <a href="/api/health" class="btn">Verificar Status</a>
+                <a href="/api/api-docs" class="btn btn-docs">Documentação API</a>
+            </div>
         </section>
         
         <h2>Endpoints Disponíveis</h2>
@@ -221,6 +236,12 @@
                 <h3>Verificação de Saúde</h3>
                 <div class="endpoint-path">/api/health</div>
                 <p>Endpoint para verificar o status e funcionamento da API.</p>
+            </div>
+            
+            <div class="endpoint-card">
+                <h3>Documentação API</h3>
+                <div class="endpoint-path">/api/api-docs</div>
+                <p>Documentação interativa da API com Swagger UI.</p>
             </div>
         </div>
         
