@@ -1,138 +1,73 @@
 import { Request, Response } from 'express';
+import { BaseController } from '../../../shared/controllers/BaseController';
+import { User, CreateUserDTO, UpdateUserDTO } from '../models/User';
 import userService from '../services/UserService';
-import { CreateUserDTO, UpdateUserDTO } from '../models/User';
-import { AppError } from '../../../shared/errors/AppError';
 
-class UserController {
-  public async getAllUsers(req: Request, res: Response): Promise<Response> {
+class UserController extends BaseController<User, CreateUserDTO, UpdateUserDTO> {
+  protected serviceName = 'Usuário';
+  protected service = userService;
+
+  /**
+   * Método específico para buscar usuário por email
+   */
+  public async getUserByEmail(req: Request, res: Response): Promise<Response> {
+    try {
+      const { email } = req.params;
+      const user = await userService.findByEmail(email);
+      
+      if (!user) {
+        return this.success(res, null, 'Usuário não encontrado com este email', 404);
+      }
+      
+      return this.success(res, user, 'Usuário encontrado com sucesso');
+    } catch (error) {
+      return this.error(res, error as Error);
+    }
+  }
+
+  /**
+   * Método específico para buscar usuário por CPF
+   */
+  public async getUserByCpf(req: Request, res: Response): Promise<Response> {
+    try {
+      const { cpf } = req.params;
+      const user = await userService.findByCpf(cpf);
+      
+      if (!user) {
+        return this.success(res, null, 'Usuário não encontrado com este CPF', 404);
+      }
+      
+      return this.success(res, user, 'Usuário encontrado com sucesso');
+    } catch (error) {
+      return this.error(res, error as Error);
+    }
+  }
+
+  /**
+   * Sobrescreve o método getAll para adicionar filtros específicos
+   */
+  public async getAll(req: Request, res: Response): Promise<Response> {
     try {
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-
-      const result = await userService.getAllUsers(page, limit);
-
-      return res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          status: 'error',
-          message: error.message,
-        });
-      }
-
-      console.error(error);
-      return res.status(500).json({
-        status: 'error',
-        message: 'Erro interno do servidor',
-      });
-    }
-  }
-
-  public async getUserById(req: Request, res: Response): Promise<Response> {
-    try {
-      const { id } = req.params;
-      const user = await userService.getUserById(id);
-
-      return res.status(200).json({
-        status: 'success',
-        data: user,
-      });
-    } catch (error) {
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          status: 'error',
-          message: error.message,
-        });
-      }
-
-      console.error(error);
-      return res.status(500).json({
-        status: 'error',
-        message: 'Erro interno do servidor',
-      });
-    }
-  }
-
-  public async createUser(req: Request, res: Response): Promise<Response> {
-    try {
-      const userData: CreateUserDTO = req.body;
       
-      const newUser = await userService.createUser(userData);
-
-      return res.status(201).json({
-        status: 'success',
-        data: newUser,
-      });
+      // Extrai filtros específicos
+      const { nome, email, cidade, estado, roleId, statusId } = req.query;
+      
+      const filters: any = {};
+      
+      if (nome) filters.nome = { contains: nome };
+      if (email) filters.email = { contains: email };
+      if (cidade) filters.cidade = { contains: cidade };
+      if (estado) filters.estado = estado;
+      if (roleId) filters.roleId = roleId;
+      if (statusId) filters.statusId = statusId;
+      
+      const result = await this.service.getAll(page, limit, filters);
+      
+      return this.success(res, result, 'Usuários listados com sucesso');
     } catch (error) {
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          status: 'error',
-          message: error.message,
-        });
-      }
-
-      console.error(error);
-      return res.status(500).json({
-        status: 'error',
-        message: 'Erro interno do servidor',
-      });
-    }
-  }
-
-  public async updateUser(req: Request, res: Response): Promise<Response> {
-    try {
-      const { id } = req.params;
-      const userData: UpdateUserDTO = req.body;
-
-      if (Object.keys(userData).length === 0) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Nenhum dado fornecido para atualização',
-        });
-      }
-
-      const updatedUser = await userService.updateUser(id, userData);
-
-      return res.status(200).json({
-        status: 'success',
-        data: updatedUser,
-      });
-    } catch (error) {
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          status: 'error',
-          message: error.message,
-        });
-      }
-
-      console.error(error);
-      return res.status(500).json({
-        status: 'error',
-        message: 'Erro interno do servidor',
-      });
-    }
-  }
-
-  public async deleteUser(req: Request, res: Response): Promise<Response> {
-    try {
-      const { id } = req.params;
-
-      await userService.deleteUser(id);
-
-      return res.status(204).send();
-    } catch (error) {
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({
-          status: 'error',
-          message: error.message,
-        });
-      }
-
-      console.error(error);
-      return res.status(500).json({
-        status: 'error',
-        message: 'Erro interno do servidor',
-      });
+      return this.error(res, error as Error);
     }
   }
 }

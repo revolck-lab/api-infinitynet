@@ -1,28 +1,102 @@
 import { Router } from 'express';
+import { RouteFactory } from '../../../shared/utils/route.factory';
 import userController from '../controllers/UserController';
-import { validate } from '../../../shared/middlewares/validation.middleware';
-import { jwtMiddleware, requireRole, apiKeyMiddleware } from '../../../shared/middlewares/jwt.middleware';
+import { apiKeyMiddleware } from '../../../shared/middlewares/auth.middleware';
 import { 
   createUserSchema, 
   updateUserSchema, 
   getUserByIdSchema, 
   listUsersSchema 
 } from '../validations/user.schema';
+import { ErrorHandler } from '../../../shared/utils/error-handler';
 
-const userRoutes = Router();
+// Cria um router específico para compatibilidade com API Key
+const apiKeyRouter = Router();
 
-// Rotas públicas
-userRoutes.get('/', validate(listUsersSchema), userController.getAllUsers);
-userRoutes.get('/:id', validate(getUserByIdSchema), userController.getUserById);
+// Configura as rotas com API Key
+const apiKeyRoutes = new RouteFactory().createRoutes([
+  {
+    method: 'post',
+    path: '/',
+    handler: ErrorHandler.catchErrors(userController.create),
+    schema: createUserSchema,
+    middlewares: [apiKeyMiddleware]
+  },
+  {
+    method: 'put',
+    path: '/:id',
+    handler: ErrorHandler.catchErrors(userController.update),
+    schema: updateUserSchema,
+    middlewares: [apiKeyMiddleware]
+  },
+  {
+    method: 'delete',
+    path: '/:id',
+    handler: ErrorHandler.catchErrors(userController.delete),
+    schema: getUserByIdSchema,
+    middlewares: [apiKeyMiddleware]
+  }
+]);
 
-// Rotas protegidas por autenticação JWT
-userRoutes.post('/', [jwtMiddleware, requireRole(50)], validate(createUserSchema), userController.createUser);
-userRoutes.put('/:id', [jwtMiddleware, requireRole(50)], validate(updateUserSchema), userController.updateUser);
-userRoutes.delete('/:id', [jwtMiddleware, requireRole(100)], validate(getUserByIdSchema), userController.deleteUser);
+// Registra as rotas de API Key
+apiKeyRouter.use('/api-key', apiKeyRoutes);
 
-// Rotas com autenticação por API Key (compatibilidade)
-userRoutes.post('/api-key', apiKeyMiddleware, validate(createUserSchema), userController.createUser);
-userRoutes.put('/api-key/:id', apiKeyMiddleware, validate(updateUserSchema), userController.updateUser);
-userRoutes.delete('/api-key/:id', apiKeyMiddleware, validate(getUserByIdSchema), userController.deleteUser);
+// Configura as rotas principais
+const userRoutes = new RouteFactory().createRoutes([
+  // Rotas públicas
+  {
+    method: 'get',
+    path: '/',
+    handler: ErrorHandler.catchErrors(userController.getAll),
+    schema: listUsersSchema
+  },
+  {
+    method: 'get',
+    path: '/:id',
+    handler: ErrorHandler.catchErrors(userController.getById),
+    schema: getUserByIdSchema
+  },
+  {
+    method: 'get',
+    path: '/email/:email',
+    handler: ErrorHandler.catchErrors(userController.getUserByEmail)
+  },
+  {
+    method: 'get',
+    path: '/cpf/:cpf',
+    handler: ErrorHandler.catchErrors(userController.getUserByCpf)
+  },
+  
+  // Rotas protegidas com autenticação e níveis de permissão
+  {
+    method: 'post',
+    path: '/',
+    handler: ErrorHandler.catchErrors(userController.create),
+    schema: createUserSchema,
+    auth: true,
+    roleLevel: 50 // Nível de Gerente ou superior
+  },
+  {
+    method: 'put',
+    path: '/:id',
+    handler: ErrorHandler.catchErrors(userController.update),
+    schema: updateUserSchema,
+    auth: true,
+    roleLevel: 50 // Nível de Gerente ou superior
+  },
+  {
+    method: 'delete',
+    path: '/:id',
+    handler: ErrorHandler.catchErrors(userController.delete),
+    schema: getUserByIdSchema,
+    auth: true,
+    roleLevel: 100 // Apenas Administrador
+  }
+]);
 
-export { userRoutes };
+// Cria o router final combinando as rotas
+const router = Router();
+router.use('/', userRoutes);
+router.use('/', apiKeyRouter);
+
+export { router as userRoutes };

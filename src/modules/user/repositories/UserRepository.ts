@@ -1,161 +1,69 @@
-import { prisma } from "../../../shared/database/prisma";
-import {
-  User,
-  CreateUserDTO,
-  UpdateUserDTO,
-  UserListResponse,
-} from "../models/User";
-import { AppError, ErrorType } from "../../../shared/errors/AppError";
-import { hash } from "bcrypt";
+import { hash } from 'bcrypt';
+import { BaseRepository } from '../../../shared/database/BaseRepository';
+import { User, CreateUserDTO, UpdateUserDTO } from '../models/User';
+import { AppError, ErrorType } from '../../../shared/errors/AppError';
+import { config } from '../../../config';
 
-class UserRepository {
-  public async findAll(page = 1, limit = 10): Promise<UserListResponse> {
-    const skip = (page - 1) * limit;
-
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        skip,
-        take: limit,
-        include: {
-          role: true,
-          status: true,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      }),
-      prisma.user.count(),
-    ]);
-
-    return {
-      users: users as User[],
-      total,
-      page,
-      limit,
-    };
+class UserRepository extends BaseRepository<User, CreateUserDTO, UpdateUserDTO> {
+  constructor() {
+    // Nome do modelo no Prisma, campos únicos e relações
+    super('user', ['email', 'cpf', 'telefone'], ['role', 'status']);
   }
 
-  public async findById(id: string): Promise<User | null> {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        role: true,
-        status: true,
-      },
-    });
-
-    return user as User | null;
-  }
-
-  public async findByEmail(email: string): Promise<User | null> {
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: {
-        role: true,
-        status: true,
-      },
-    });
-
-    return user as User | null;
-  }
-
-  public async findByCpf(cpf: string): Promise<User | null> {
-    const user = await prisma.user.findUnique({
-      where: { cpf },
-    });
-
-    return user as User | null;
-  }
-
+  /**
+   * Sobrescreve o método create para tratar senhas e validações específicas
+   */
   public async create(data: CreateUserDTO): Promise<User> {
-    // Verifica se já existe usuário com esse e-mail
-    const existingUserEmail = await this.findByEmail(data.email);
-    if (existingUserEmail) {
-      throw new AppError("Este e-mail já está em uso", ErrorType.CONFLICT, 400);
-    }
-
-    // Verifica se já existe usuário com esse CPF
-    const existingUserCpf = await this.findByCpf(data.cpf);
-    if (existingUserCpf) {
-      throw new AppError("Este CPF já está cadastrado", ErrorType.CONFLICT, 400);
-    }
-
     // Verifica se os IDs de role e status existem
-    const role = await prisma.role.findUnique({
+    const role = await this.prisma.role.findUnique({
       where: { id: data.roleId },
     });
 
     if (!role) {
-      throw new AppError("Perfil (role) não encontrado", ErrorType.BAD_REQUEST, 400);
+      throw new AppError('Perfil (role) não encontrado', ErrorType.BAD_REQUEST, 400);
     }
 
-    const status = await prisma.status.findUnique({
+    const status = await this.prisma.status.findUnique({
       where: { id: data.statusId },
     });
 
     if (!status) {
-      throw new AppError("Status não encontrado", ErrorType.BAD_REQUEST, 400);
+      throw new AppError('Status não encontrado', ErrorType.BAD_REQUEST, 400);
     }
 
     // Criptografa a senha
-    const hashedPassword = await hash(data.senha, 10);
+    const hashedPassword = await hash(data.senha, config.auth.bcrypt.saltRounds);
 
-    const user = await prisma.user.create({
-      data: {
-        ...data,
-        senha: hashedPassword,
-      },
-      include: {
-        role: true,
-        status: true,
-      },
+    // Utiliza o método da classe base, mas com senha criptografada
+    return super.create({
+      ...data,
+      senha: hashedPassword,
     });
-
-    return user as User;
   }
 
+  /**
+   * Sobrescreve o método update para tratar senhas
+   */
   public async update(id: string, data: UpdateUserDTO): Promise<User> {
-    const user = await this.findById(id);
-
-    if (!user) {
-      throw new AppError("Usuário não encontrado", ErrorType.NOT_FOUND, 404);
-    }
-
-    // Se estiver atualizando o e-mail, verifica se já existe
-    if (data.email && data.email !== user.email) {
-      const existingUserEmail = await this.findByEmail(data.email);
-      if (existingUserEmail) {
-        throw new AppError("Este e-mail já está em uso", ErrorType.CONFLICT, 400);
-      }
-    }
-
-    // Se estiver atualizando o CPF, verifica se já existe
-    if (data.cpf && data.cpf !== user.cpf) {
-      const existingUserCpf = await this.findByCpf(data.cpf);
-      if (existingUserCpf) {
-        throw new AppError("Este CPF já está cadastrado", ErrorType.CONFLICT, 400);
-      }
-    }
-
     // Se estiver atualizando a roleId, verifica se existe
     if (data.roleId) {
-      const role = await prisma.role.findUnique({
+      const role = await this.prisma.role.findUnique({
         where: { id: data.roleId },
       });
 
       if (!role) {
-        throw new AppError("Perfil (role) não encontrado", ErrorType.BAD_REQUEST, 400);
+        throw new AppError('Perfil (role) não encontrado', ErrorType.BAD_REQUEST, 400);
       }
     }
 
     // Se estiver atualizando o statusId, verifica se existe
     if (data.statusId) {
-      const status = await prisma.status.findUnique({
+      const status = await this.prisma.status.findUnique({
         where: { id: data.statusId },
       });
 
       if (!status) {
-        throw new AppError("Status não encontrado", ErrorType.BAD_REQUEST, 400);
+        throw new AppError('Status não encontrado', ErrorType.BAD_REQUEST, 400);
       }
     }
 
@@ -163,32 +71,26 @@ class UserRepository {
     let updateData = { ...data };
 
     if (data.senha) {
-      const hashedPassword = await hash(data.senha, 10);
+      const hashedPassword = await hash(data.senha, config.auth.bcrypt.saltRounds);
       updateData.senha = hashedPassword;
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: updateData,
-      include: {
-        role: true,
-        status: true,
-      },
-    });
-
-    return updatedUser as User;
+    // Utiliza o método da classe base com os dados tratados
+    return super.update(id, updateData);
   }
 
-  public async delete(id: string): Promise<void> {
-    const user = await this.findById(id);
+  /**
+   * Método específico para buscar usuário por email
+   */
+  public async findByEmail(email: string): Promise<User | null> {
+    return this.findByField('email', email);
+  }
 
-    if (!user) {
-      throw new AppError("Usuário não encontrado", ErrorType.NOT_FOUND, 404);
-    }
-
-    await prisma.user.delete({
-      where: { id },
-    });
+  /**
+   * Método específico para buscar usuário por CPF
+   */
+  public async findByCpf(cpf: string): Promise<User | null> {
+    return this.findByField('cpf', cpf);
   }
 }
 
