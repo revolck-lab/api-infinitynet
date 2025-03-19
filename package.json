@@ -13,6 +13,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts",
+    "postbuild": "node scripts/render-setup.js",
     "render-build": "npm install && npx prisma generate && tsc --skipLibCheck && node scripts/render-setup.js"
   },
   "prisma": {

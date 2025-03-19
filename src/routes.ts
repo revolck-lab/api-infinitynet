@@ -37,6 +37,76 @@ routes.get("/health", (req, res) => {
   });
 });
 
+// Rota de diagnóstico (apenas em ambiente de desenvolvimento)
+if (process.env.NODE_ENV !== 'production') {
+  routes.get("/diagnostics", (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+    
+    // Diretórios importantes para verificar
+    const rootDir = process.cwd();
+    const srcDir = path.join(rootDir, 'src');
+    const distDir = path.join(rootDir, 'dist');
+    const srcPublicDir = path.join(srcDir, 'public');
+    const distPublicDir = path.join(distDir, 'public');
+    
+    // Função para verificar se um diretório existe e listar seus arquivos
+    const checkDir = (dir) => {
+      const exists = fs.existsSync(dir);
+      let files = [];
+      
+      if (exists) {
+        try {
+          files = fs.readdirSync(dir);
+        } catch (error) {
+          files = [`Erro ao ler: ${error.message}`];
+        }
+      }
+      
+      return {
+        path: dir,
+        exists,
+        files
+      };
+    };
+    
+    // Coleta informações do ambiente
+    const diagnostics = {
+      environment: {
+        nodeEnv: process.env.NODE_ENV || 'development',
+        nodeVersion: process.version,
+        platform: process.platform,
+        arch: process.arch,
+        hostname: os.hostname(),
+        cwd: rootDir,
+        memoryUsage: process.memoryUsage(),
+        uptime: process.uptime()
+      },
+      directories: {
+        root: checkDir(rootDir),
+        src: checkDir(srcDir),
+        dist: checkDir(distDir),
+        srcPublic: checkDir(srcPublicDir),
+        distPublic: checkDir(distPublicDir)
+      },
+      envVars: {
+        PORT: process.env.PORT,
+        HOST: process.env.HOST,
+        DATABASE_URL: process.env.DATABASE_URL ? '[REDACTED]' : undefined,
+        // Não mostrar informações sensíveis
+        JWT_SECRET: process.env.JWT_SECRET ? '[REDACTED]' : undefined,
+        API_KEY: process.env.API_KEY ? '[REDACTED]' : undefined,
+      }
+    };
+    
+    res.status(200).json({
+      status: "success",
+      data: diagnostics
+    });
+  });
+}
+
 // Registrar módulos de funcionalidades
 routes.use("/auth", authRoutes);
 routes.use("/users", userRoutes);

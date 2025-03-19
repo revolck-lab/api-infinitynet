@@ -1,11 +1,12 @@
+// scripts/render-setup.js (corrigido)
 const fs = require('fs');
 const path = require('path');
 
 console.log('Iniciando configuração para o Render...');
 
 // Caminhos para diretórios importantes
-const distDir = path.join(process.cwd(), 'dist');
-const publicDir = path.join(distDir, 'public');
+const distDir = path.resolve(process.cwd(), 'dist');
+const publicDir = path.resolve(distDir, 'public');
 
 // Conteúdo do HTML para a página inicial
 const htmlContent = `<!DOCTYPE html>
@@ -255,7 +256,7 @@ const htmlContent = `<!DOCTYPE html>
 </body>
 </html>`;
 
-// Cria diretórios se não existirem
+// Cria diretórios se não existirem de forma recursiva
 console.log(`Verificando diretório dist: ${distDir}`);
 if (!fs.existsSync(distDir)) {
     console.log('Criando diretório dist...');
@@ -271,5 +272,16 @@ if (!fs.existsSync(publicDir)) {
 // Salva o arquivo HTML
 console.log('Salvando arquivo index.html...');
 fs.writeFileSync(path.join(publicDir, 'index.html'), htmlContent);
+
+// Exibe os diretórios criados para verificação
+console.log('Conteúdo do diretório dist:');
+if (fs.existsSync(distDir)) {
+    console.log(fs.readdirSync(distDir));
+}
+
+console.log('Conteúdo do diretório public:');
+if (fs.existsSync(publicDir)) {
+    console.log(fs.readdirSync(publicDir));
+}
 
 console.log('Configuração concluída com sucesso!');

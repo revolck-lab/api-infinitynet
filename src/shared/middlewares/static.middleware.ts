@@ -1,8 +1,7 @@
-// src/shared/middlewares/static.middleware.ts
-
 import path from 'path';
 import express from 'express';
 import { Request, Response, NextFunction } from 'express';
+import fs from 'fs';
 
 /**
  * Configura os middlewares necessários para servir arquivos estáticos
@@ -11,11 +10,33 @@ import { Request, Response, NextFunction } from 'express';
 export const setupStaticFiles = (app: express.Express): void => {
   // Define o diretório de arquivos estáticos, considerando ambiente de produção vs desenvolvimento
   const isProduction = process.env.NODE_ENV === 'production';
-  const publicDir = isProduction 
-    ? path.join(process.cwd(), 'dist/public')  // Em produção
-    : path.join(__dirname, '../../public');    // Em desenvolvimento
+  
+  // Em produção, tentamos múltiplos caminhos possíveis para encontrar o diretório public
+  const possiblePaths = isProduction 
+    ? [
+        path.resolve(process.cwd(), 'dist/public'),
+        path.resolve(process.cwd(), 'src/dist/public'),
+        path.resolve(process.cwd(), 'public'),
+        path.resolve(process.cwd(), 'src/public'),
+      ]
+    : [
+        path.resolve(process.cwd(), 'src/public')
+      ];
+  
+  // Encontra o primeiro caminho que existe
+  const publicDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[0];
   
   console.log(`Configurando arquivos estáticos no diretório: ${publicDir}`);
+  
+  // Tenta criar o diretório se não existir
+  if (!fs.existsSync(publicDir)) {
+    console.log(`Diretório não encontrado, criando: ${publicDir}`);
+    try {
+      fs.mkdirSync(publicDir, { recursive: true });
+    } catch (error) {
+      console.error(`Erro ao criar diretório: ${error}`);
+    }
+  }
   
   // Configura o Express para servir arquivos estáticos
   app.use(express.static(publicDir));
@@ -26,7 +47,6 @@ export const setupStaticFiles = (app: express.Express): void => {
     console.log(`Tentando servir o arquivo: ${indexPath}`);
     
     // Verifica se o arquivo existe antes de tentar servi-lo
-    const fs = require('fs');
     if (fs.existsSync(indexPath)) {
       res.sendFile(indexPath);
     } else {
@@ -53,14 +73,24 @@ export const spaFallback = (apiPrefix: string) => {
     // Se a rota não começar com o prefixo da API e for uma requisição GET, servir o index.html
     if (!req.path.startsWith(apiPrefix) && req.method === 'GET') {
       const isProduction = process.env.NODE_ENV === 'production';
-      const publicDir = isProduction 
-        ? path.join(process.cwd(), 'dist/public')
-        : path.join(__dirname, '../../public');
       
+      // Mesma lógica de múltiplos caminhos possíveis
+      const possiblePaths = isProduction 
+        ? [
+            path.resolve(process.cwd(), 'dist/public'),
+            path.resolve(process.cwd(), 'src/dist/public'),
+            path.resolve(process.cwd(), 'public'),
+            path.resolve(process.cwd(), 'src/public'),
+          ]
+        : [
+            path.resolve(process.cwd(), 'src/public')
+          ];
+      
+      // Encontra o primeiro caminho que existe
+      const publicDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[0];
       const indexPath = path.join(publicDir, 'index.html');
       
       // Verifica se o arquivo existe antes de tentar servi-lo
-      const fs = require('fs');
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);
       } else {
