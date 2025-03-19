@@ -3,6 +3,7 @@ import { prisma } from './prisma';
 import { AppError, ErrorType } from '../errors/AppError';
 import { redisService } from '../services/redis.service';
 import { config } from '../../config';
+import { logger } from '../services/logger.service';
 
 /**
  * Interface base para paginação
@@ -107,12 +108,27 @@ export abstract class BaseRepository<T, CreateDTO, UpdateDTO> {
    * Obtém um registro pelo ID
    */
   public async findById(id: string): Promise<T | null> {
-    // Tenta obter do cache primeiro
-    if (this.cacheEnabled) {
-      const cached = await redisService.get(this.getCacheKey(id));
-      if (cached) {
-        return JSON.parse(cached) as T;
+    try {
+      // Tenta obter do cache primeiro
+      if (this.cacheEnabled) {
+        try {
+          const cached = await redisService.get(this.getCacheKey(id));
+          if (cached) {
+            return JSON.parse(cached) as T;
+          }
+        } catch (error) {
+          logger.debug('Cache lookup failed, continuing with database query', { 
+            model: this.model, 
+            id 
+          });
+        }
       }
+    } catch (error) {
+      logger.debug('Cache error in findById, continuing with database query', { 
+        model: this.model, 
+        id,
+        error: (error as any).message 
+      });
     }
     
     // Constrói as relações para o include se houver
@@ -130,11 +146,18 @@ export abstract class BaseRepository<T, CreateDTO, UpdateDTO> {
     
     // Salva no cache se encontrado
     if (record && this.cacheEnabled) {
-      await redisService.set(
-        this.getCacheKey(id),
-        JSON.stringify(record),
-        this.cacheTTL
-      );
+      try {
+        await redisService.set(
+          this.getCacheKey(id),
+          JSON.stringify(record),
+          this.cacheTTL
+        );
+      } catch (error) {
+        logger.debug('Failed to store in cache, continuing', { 
+          model: this.model, 
+          id 
+        });
+      }
     }
     
     return record as T | null;
@@ -162,11 +185,18 @@ export abstract class BaseRepository<T, CreateDTO, UpdateDTO> {
     
     // Salva no cache
     if (this.cacheEnabled) {
-      await redisService.set(
-        this.getCacheKey(record.id),
-        JSON.stringify(record),
-        this.cacheTTL
-      );
+      try {
+        await redisService.set(
+          this.getCacheKey(record.id),
+          JSON.stringify(record),
+          this.cacheTTL
+        );
+      } catch (error) {
+        logger.debug('Failed to store new record in cache', { 
+          model: this.model, 
+          id: record.id 
+        });
+      }
     }
     
     return record as T;
@@ -201,11 +231,18 @@ export abstract class BaseRepository<T, CreateDTO, UpdateDTO> {
     
     // Atualiza o cache
     if (this.cacheEnabled) {
-      await redisService.set(
-        this.getCacheKey(id),
-        JSON.stringify(updated),
-        this.cacheTTL
-      );
+      try {
+        await redisService.set(
+          this.getCacheKey(id),
+          JSON.stringify(updated),
+          this.cacheTTL
+        );
+      } catch (error) {
+        logger.debug('Failed to update record in cache', { 
+          model: this.model, 
+          id 
+        });
+      }
     }
     
     return updated as T;
@@ -227,7 +264,14 @@ export abstract class BaseRepository<T, CreateDTO, UpdateDTO> {
     
     // Remove do cache
     if (this.cacheEnabled) {
-      await redisService.delete(this.getCacheKey(id));
+      try {
+        await redisService.delete(this.getCacheKey(id));
+      } catch (error) {
+        logger.debug('Failed to remove record from cache', { 
+          model: this.model, 
+          id 
+        });
+      }
     }
   }
 
@@ -255,8 +299,7 @@ export abstract class BaseRepository<T, CreateDTO, UpdateDTO> {
    * Invalidar todos os caches relacionados a este modelo
    */
   public async invalidateCache(): Promise<void> {
-    // Implementação depende do cliente Redis
-    // Em um sistema de produção, deve ter uma estratégia para padrões de chaves
-    // Simplificado para o escopo atual
+    // Implementação simplificada pois dependeria do redis
+    logger.debug('Cache invalidation called for model', { model: this.model });
   }
 }
