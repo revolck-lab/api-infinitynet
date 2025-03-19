@@ -1,19 +1,20 @@
 import { hash } from 'bcrypt';
 import { BaseRepository } from '../../../shared/database/BaseRepository';
-import { User, CreateUserDTO, UpdateUserDTO } from '../models/User';
+import { UserAdmin, CreateUserAdminDTO, UpdateUserAdminDTO } from '../models/UserAdmin';
 import { AppError, ErrorType } from '../../../shared/errors/AppError';
 import { config } from '../../../config';
 
-class UserRepository extends BaseRepository<User, CreateUserDTO, UpdateUserDTO> {
+class UserAdminRepository extends BaseRepository<UserAdmin, CreateUserAdminDTO, UpdateUserAdminDTO> {
   constructor() {
-    // Nome do modelo no Prisma, campos únicos e relações
-    super('user', ['email', 'cpf', 'telefone'], ['role', 'status']);
+    // Passando 'userAdmin' como nome do modelo para o Prisma
+    // Campos únicos e relações
+    super('userAdmin', ['email', 'cpf', 'telefone'], ['role', 'status']);
   }
 
   /**
    * Sobrescreve o método create para tratar senhas e validações específicas
    */
-  public async create(data: CreateUserDTO): Promise<User> {
+  public async create(data: CreateUserAdminDTO): Promise<UserAdmin> {
     // Verifica se os IDs de role e status existem
     const role = await this.prisma.role.findUnique({
       where: { id: data.roleId },
@@ -44,7 +45,7 @@ class UserRepository extends BaseRepository<User, CreateUserDTO, UpdateUserDTO> 
   /**
    * Sobrescreve o método update para tratar senhas
    */
-  public async update(id: string, data: UpdateUserDTO): Promise<User> {
+  public async update(id: string, data: UpdateUserAdminDTO): Promise<UserAdmin> {
     // Se estiver atualizando a roleId, verifica se existe
     if (data.roleId) {
       const role = await this.prisma.role.findUnique({
@@ -80,18 +81,50 @@ class UserRepository extends BaseRepository<User, CreateUserDTO, UpdateUserDTO> 
   }
 
   /**
+   * Método específico para buscar usuário por CPF
+   */
+  public async findByCpf(cpf: string): Promise<UserAdmin | null> {
+    return this.findByField('cpf', cpf);
+  }
+
+  /**
    * Método específico para buscar usuário por email
    */
-  public async findByEmail(email: string): Promise<User | null> {
+  public async findByEmail(email: string): Promise<UserAdmin | null> {
     return this.findByField('email', email);
   }
 
   /**
-   * Método específico para buscar usuário por CPF
+   * Método específico para buscar usuário por telefone
    */
-  public async findByCpf(cpf: string): Promise<User | null> {
-    return this.findByField('cpf', cpf);
+  public async findByTelefone(telefone: string): Promise<UserAdmin | null> {
+    return this.findByField('telefone', telefone);
+  }
+
+  /**
+   * Método para atualizar o número de tentativas de login
+   */
+  public async incrementFailedAttempts(id: string): Promise<UserAdmin> {
+    const user = await this.findById(id);
+    
+    if (!user) {
+      throw new AppError('Usuário não encontrado', ErrorType.NOT_FOUND, 404);
+    }
+    
+    return this.update(id, {
+      failedAttempts: (user.failedAttempts || 0) + 1
+    });
+  }
+
+  /**
+   * Método para resetar o número de tentativas de login e atualizar último login
+   */
+  public async registerSuccessfulLogin(id: string): Promise<UserAdmin> {
+    return this.update(id, {
+      failedAttempts: 0,
+      lastLoginAt: new Date()
+    });
   }
 }
 
-export default new UserRepository();
+export default new UserAdminRepository();

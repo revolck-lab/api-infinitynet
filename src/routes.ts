@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { userRoutes } from "./modules/user/routes/user.routes";
 import { roleRoutes } from "./modules/role/routes/role.routes";
 import { statusRoutes } from "./modules/status/routes/status.routes";
 import { authRoutes } from "./modules/auth/routes/auth.routes";
@@ -171,7 +170,6 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Registrar módulos de funcionalidades
 routes.use("/auth", authRoutes);
-routes.use("/users", userRoutes);
 routes.use("/roles", roleRoutes);
 routes.use("/status", statusRoutes);
 

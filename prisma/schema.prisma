@@ -11,6 +11,8 @@ datasource db {
   relationMode = "prisma"
 }
 
+// Modelo original foi renomeado para User e será descontinuado
+// Mantido para compatibilidade, novos registros devem usar UserAdmin, UserPhone ou UserAffiliate
 model User {
   id        String   @id @default(uuid())
   cpf       String   @unique
@@ -32,20 +34,101 @@ model User {
   @@map("users")
 }
 
+// 1. Usuário para App Móvel (login via telefone + PIN)
+model UserPhone {
+  id            String   @id @default(uuid())
+  nome          String
+  email         String   @unique
+  telefone      String   @unique
+  cpf           String   @unique
+  endereco      String
+  avatar        String?
+  cidade        String
+  estado        String
+  pin           String
+  roleId        String
+  statusId      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime?
+  failedAttempts Int      @default(0)
+  
+  role          Role     @relation(fields: [roleId], references: [id])
+  status        Status   @relation(fields: [statusId], references: [id])
+
+  @@map("users_phone")
+}
+
+// 2. Usuário Administrativo (login via CPF + senha)
+model UserAdmin {
+  id            String   @id @default(uuid())
+  nome          String
+  email         String   @unique
+  telefone      String   @unique
+  cpf           String   @unique
+  endereco      String
+  avatar        String?
+  cidade        String
+  estado        String
+  senha         String
+  roleId        String
+  statusId      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime?
+  failedAttempts Int      @default(0)
+  
+  role          Role     @relation(fields: [roleId], references: [id])
+  status        Status   @relation(fields: [statusId], references: [id])
+
+  @@map("users_admin")
+}
+
+// 3. Usuário Afiliado (login via CPF + senha)
+model UserAffiliate {
+  id            String   @id @default(uuid())
+  nome          String
+  email         String   @unique
+  telefone      String   @unique
+  cpf           String   @unique
+  endereco      String
+  avatar        String?
+  cidade        String
+  estado        String
+  senha         String
+  roleId        String
+  statusId      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime?
+  failedAttempts Int      @default(0)
+  
+  role          Role     @relation(fields: [roleId], references: [id])
+  status        Status   @relation(fields: [statusId], references: [id])
+
+  @@map("users_affiliate")
+}
+
 model Role {
-  id      String  @id @default(uuid())
-  name    String  @unique
-  level   Int     @default(1)
-  status  Int     @default(1)
-  users   User[]
+  id             String         @id @default(uuid())
+  name           String         @unique
+  level          Int            @default(1)
+  status         Int            @default(1)
+  users          User[]
+  usersPhone     UserPhone[]
+  usersAdmin     UserAdmin[]
+  usersAffiliate UserAffiliate[]
 
   @@map("roles")
 }
 
 model Status {
-  id      String  @id @default(uuid())
-  name    String  @unique
-  users   User[]
+  id             String         @id @default(uuid())
+  name           String         @unique
+  users          User[]
+  usersPhone     UserPhone[]
+  usersAdmin     UserAdmin[]
+  usersAffiliate UserAffiliate[]
 
   @@map("status")
 }

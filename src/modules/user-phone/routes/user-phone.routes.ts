@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { RouteFactory } from '../../../shared/utils/route.factory';
-import userController from '../controllers/UserController';
+import userPhoneController from '../controllers/UserPhoneController';
 import { apiKeyMiddleware } from '../../../shared/middlewares/auth.middleware';
 import { 
-  createUserSchema, 
-  updateUserSchema, 
-  getUserByIdSchema, 
-  listUsersSchema 
-} from '../validations/user.schema';
+  createUserPhoneSchema, 
+  updateUserPhoneSchema, 
+  getUserPhoneByIdSchema, 
+  listUserPhoneSchema 
+} from '../validations/user-phone.schema';
 import { ErrorHandler } from '../../../shared/utils/error-handler';
 
 // Cria um router específico para compatibilidade com API Key
@@ -18,22 +18,22 @@ const apiKeyRoutes = new RouteFactory().createRoutes([
   {
     method: 'post',
     path: '/',
-    handler: ErrorHandler.catchErrors(userController.create),
-    schema: createUserSchema,
+    handler: ErrorHandler.catchErrors(userPhoneController.create),
+    schema: createUserPhoneSchema,
     middlewares: [apiKeyMiddleware]
   },
   {
     method: 'put',
     path: '/:id',
-    handler: ErrorHandler.catchErrors(userController.update),
-    schema: updateUserSchema,
+    handler: ErrorHandler.catchErrors(userPhoneController.update),
+    schema: updateUserPhoneSchema,
     middlewares: [apiKeyMiddleware]
   },
   {
     method: 'delete',
     path: '/:id',
-    handler: ErrorHandler.catchErrors(userController.delete),
-    schema: getUserByIdSchema,
+    handler: ErrorHandler.catchErrors(userPhoneController.delete),
+    schema: getUserPhoneByIdSchema,
     middlewares: [apiKeyMiddleware]
   }
 ]);
@@ -42,53 +42,58 @@ const apiKeyRoutes = new RouteFactory().createRoutes([
 apiKeyRouter.use('/api-key', apiKeyRoutes);
 
 // Configura as rotas principais
-const userRoutes = new RouteFactory().createRoutes([
+const userPhoneRoutes = new RouteFactory().createRoutes([
   // Rotas públicas
   {
     method: 'get',
     path: '/',
-    handler: ErrorHandler.catchErrors(userController.getAll),
-    schema: listUsersSchema
+    handler: ErrorHandler.catchErrors(userPhoneController.getAll),
+    schema: listUserPhoneSchema
   },
   {
     method: 'get',
     path: '/:id',
-    handler: ErrorHandler.catchErrors(userController.getById),
-    schema: getUserByIdSchema
+    handler: ErrorHandler.catchErrors(userPhoneController.getById),
+    schema: getUserPhoneByIdSchema
+  },
+  {
+    method: 'get',
+    path: '/telefone/:telefone',
+    handler: ErrorHandler.catchErrors(userPhoneController.getUserByTelefone)
   },
   {
     method: 'get',
     path: '/email/:email',
-    handler: ErrorHandler.catchErrors(userController.getUserByEmail)
+    handler: ErrorHandler.catchErrors(userPhoneController.getUserByEmail)
   },
   {
     method: 'get',
     path: '/cpf/:cpf',
-    handler: ErrorHandler.catchErrors(userController.getUserByCpf)
+    handler: ErrorHandler.catchErrors(userPhoneController.getUserByCpf)
   },
   
   // Rotas protegidas com autenticação e níveis de permissão
   {
     method: 'post',
     path: '/',
-    handler: ErrorHandler.catchErrors(userController.create),
-    schema: createUserSchema,
+    handler: ErrorHandler.catchErrors(userPhoneController.create),
+    schema: createUserPhoneSchema,
     auth: true,
     roleLevel: 50 // Nível de Gerente ou superior
   },
   {
     method: 'put',
     path: '/:id',
-    handler: ErrorHandler.catchErrors(userController.update),
-    schema: updateUserSchema,
+    handler: ErrorHandler.catchErrors(userPhoneController.update),
+    schema: updateUserPhoneSchema,
     auth: true,
     roleLevel: 50 // Nível de Gerente ou superior
   },
   {
     method: 'delete',
     path: '/:id',
-    handler: ErrorHandler.catchErrors(userController.delete),
-    schema: getUserByIdSchema,
+    handler: ErrorHandler.catchErrors(userPhoneController.delete),
+    schema: getUserPhoneByIdSchema,
     auth: true,
     roleLevel: 100 // Apenas Administrador
   }
@@ -96,7 +101,7 @@ const userRoutes = new RouteFactory().createRoutes([
 
 // Cria o router final combinando as rotas
 const router = Router();
-router.use('/', userRoutes);
+router.use('/', userPhoneRoutes);
 router.use('/', apiKeyRouter);
 
-export { router as userRoutes };
+export { router as userPhoneRoutes };

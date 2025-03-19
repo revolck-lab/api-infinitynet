@@ -7,16 +7,52 @@ import authService from "../services/auth.service";
  */
 class AuthController {
   /**
-   * Realiza o login do usuário
+   * Realiza o login do usuário de app (phone + PIN)
    */
-  public async login(req: Request, res: Response): Promise<Response> {
-    const { email, password } = req.body;
+  public async loginPhone(req: Request, res: Response): Promise<Response> {
+    const { telefone, pin } = req.body;
 
-    if (!email || !password) {
-      throw AppError.validation("Email e senha são obrigatórios");
+    if (!telefone || !pin) {
+      throw AppError.validation("Telefone e PIN são obrigatórios");
     }
 
-    const authResponse = await authService.login(email, password);
+    const authResponse = await authService.loginByPhone(telefone, pin);
+
+    return res.status(200).json({
+      status: "success",
+      data: authResponse,
+    });
+  }
+
+  /**
+   * Realiza o login do usuário administrativo (CPF + senha)
+   */
+  public async loginAdmin(req: Request, res: Response): Promise<Response> {
+    const { cpf, senha } = req.body;
+
+    if (!cpf || !senha) {
+      throw AppError.validation("CPF e senha são obrigatórios");
+    }
+
+    const authResponse = await authService.loginAdmin(cpf, senha);
+
+    return res.status(200).json({
+      status: "success",
+      data: authResponse,
+    });
+  }
+
+  /**
+   * Realiza o login do usuário afiliado (CPF + senha)
+   */
+  public async loginAffiliate(req: Request, res: Response): Promise<Response> {
+    const { cpf, senha } = req.body;
+
+    if (!cpf || !senha) {
+      throw AppError.validation("CPF e senha são obrigatórios");
+    }
+
+    const authResponse = await authService.loginAffiliate(cpf, senha);
 
     return res.status(200).json({
       status: "success",

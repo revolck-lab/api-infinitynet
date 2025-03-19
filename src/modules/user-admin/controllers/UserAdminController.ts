@@ -1,11 +1,29 @@
 import { Request, Response } from 'express';
 import { BaseController } from '../../../shared/controllers/BaseController';
-import { User, CreateUserDTO, UpdateUserDTO } from '../models/User';
-import userService from '../services/UserService';
+import { UserAdmin, CreateUserAdminDTO, UpdateUserAdminDTO } from '../models/UserAdmin';
+import userAdminService from '../services/UserAdminService';
 
-class UserController extends BaseController<User, CreateUserDTO, UpdateUserDTO> {
-  protected serviceName = 'Usuário';
-  protected service = userService;
+class UserAdminController extends BaseController<UserAdmin, CreateUserAdminDTO, UpdateUserAdminDTO> {
+  protected serviceName = 'Usuário Administrativo';
+  protected service = userAdminService;
+
+  /**
+   * Método específico para buscar usuário por CPF
+   */
+  public async getUserByCpf(req: Request, res: Response): Promise<Response> {
+    try {
+      const { cpf } = req.params;
+      const user = await userAdminService.findByCpf(cpf);
+      
+      if (!user) {
+        return this.success(res, null, 'Usuário não encontrado com este CPF', 404);
+      }
+      
+      return this.success(res, user, 'Usuário encontrado com sucesso');
+    } catch (error) {
+      return this.error(res, error as Error);
+    }
+  }
 
   /**
    * Método específico para buscar usuário por email
@@ -13,7 +31,7 @@ class UserController extends BaseController<User, CreateUserDTO, UpdateUserDTO> 
   public async getUserByEmail(req: Request, res: Response): Promise<Response> {
     try {
       const { email } = req.params;
-      const user = await userService.findByEmail(email);
+      const user = await userAdminService.findByEmail(email);
       
       if (!user) {
         return this.success(res, null, 'Usuário não encontrado com este email', 404);
@@ -26,15 +44,15 @@ class UserController extends BaseController<User, CreateUserDTO, UpdateUserDTO> 
   }
 
   /**
-   * Método específico para buscar usuário por CPF
+   * Método específico para buscar usuário por telefone
    */
-  public async getUserByCpf(req: Request, res: Response): Promise<Response> {
+  public async getUserByTelefone(req: Request, res: Response): Promise<Response> {
     try {
-      const { cpf } = req.params;
-      const user = await userService.findByCpf(cpf);
+      const { telefone } = req.params;
+      const user = await userAdminService.findByTelefone(telefone);
       
       if (!user) {
-        return this.success(res, null, 'Usuário não encontrado com este CPF', 404);
+        return this.success(res, null, 'Usuário não encontrado com este telefone', 404);
       }
       
       return this.success(res, user, 'Usuário encontrado com sucesso');
@@ -52,12 +70,14 @@ class UserController extends BaseController<User, CreateUserDTO, UpdateUserDTO> 
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       
       // Extrai filtros específicos
-      const { nome, email, cidade, estado, roleId, statusId } = req.query;
+      const { nome, email, telefone, cpf, cidade, estado, roleId, statusId } = req.query;
       
       const filters: any = {};
       
       if (nome) filters.nome = { contains: nome };
       if (email) filters.email = { contains: email };
+      if (telefone) filters.telefone = { contains: telefone };
+      if (cpf) filters.cpf = { contains: cpf };
       if (cidade) filters.cidade = { contains: cidade };
       if (estado) filters.estado = estado;
       if (roleId) filters.roleId = roleId;
@@ -72,4 +92,4 @@ class UserController extends BaseController<User, CreateUserDTO, UpdateUserDTO> 
   }
 }
 
-export default new UserController();
+export default new UserAdminController();

@@ -1,3 +1,4 @@
+// src/shared/swagger/swagger.config.ts
 import swaggerJSDoc from 'swagger-jsdoc';
 import { version } from '../../../package.json';
 import { config } from '../../config';
@@ -6,12 +7,20 @@ import { config } from '../../config';
 const apiInfo = {
   title: 'InfinityNet API',
   version,
-  description: `API REST moderna para gerenciamento de usuários com arquitetura modular e microserviços.
+  description: `API REST moderna para gerenciamento de usuários com arquitetura modular e suporte a múltiplos tipos de usuários.
+  
+  ## Tipos de Usuários e Autenticação
+  
+  Esta API suporta três tipos de usuários com métodos de autenticação específicos:
+  
+  1. **Usuários de App (UserPhone)**: Login realizado via telefone e PIN.
+  2. **Usuários Administradores (UserAdmin)**: Login realizado via CPF e senha.
+  3. **Usuários Afiliados (UserAffiliate)**: Login realizado via CPF e senha.
   
   ## Características
   
   - ✅ Arquitetura modular inspirada em microserviços
-  - ✅ Autenticação JWT com refresh tokens
+  - ✅ Múltiplos métodos de autenticação JWT com refresh tokens
   - ✅ Validação de dados com Zod
   - ✅ Tratamento centralizado de erros
   - ✅ Logs estruturados
@@ -21,7 +30,11 @@ const apiInfo = {
   
   Esta API suporta dois métodos de autenticação:
   
-  1. **JWT (recomendado)**: Use o endpoint \`/api/auth/login\` para obter um token JWT.
+  1. **JWT (recomendado)**: Use os endpoints específicos para obter um token JWT:
+     - App: \`/api/auth/login/phone\` (telefone + PIN)
+     - Admin: \`/api/auth/login/admin\` (CPF + senha)
+     - Afiliado: \`/api/auth/login/affiliate\` (CPF + senha)
+  
   2. **API Key (legado)**: Inclua o cabeçalho \`x-api-key\` nas requisições.
   `,
   contact: {
@@ -68,11 +81,27 @@ const tags = [
     }
   },
   { 
-    name: 'Users', 
-    description: 'Gerenciamento de usuários',
+    name: 'App Users', 
+    description: 'Gerenciamento de usuários do aplicativo móvel (phone + pin)',
     externalDocs: {
-      description: 'Guia detalhado de usuários',
-      url: 'https://docs.infinitynet.com.br/users'
+      description: 'Guia de usuários do app',
+      url: 'https://docs.infinitynet.com.br/app-users'
+    }
+  },
+  { 
+    name: 'Admin Users', 
+    description: 'Gerenciamento de usuários administrativos (cpf + senha)',
+    externalDocs: {
+      description: 'Guia de usuários administrativos',
+      url: 'https://docs.infinitynet.com.br/admin-users'
+    }
+  },
+  { 
+    name: 'Affiliate Users', 
+    description: 'Gerenciamento de usuários afiliados (cpf + senha)',
+    externalDocs: {
+      description: 'Guia de usuários afiliados',
+      url: 'https://docs.infinitynet.com.br/affiliate-users'
     }
   },
   { 
@@ -97,7 +126,10 @@ const securitySchemes = {
     bearerFormat: 'JWT',
     description: `Autenticação JWT (recomendada).
     
-    Para obter um token JWT, use o endpoint \`/api/auth/login\`.
+    Para obter um token JWT, use o endpoint específico para seu tipo de usuário:
+    - App Users: \`/api/auth/login/phone\` (telefone + PIN)
+    - Admin Users: \`/api/auth/login/admin\` (CPF + senha)
+    - Affiliate Users: \`/api/auth/login/affiliate\` (CPF + senha)
     
     Exemplo de uso: \`Authorization: Bearer eyJhbGciOiJIUzI1...\``
   },
@@ -145,15 +177,25 @@ const swaggerOptions: swaggerJSDoc.Options = {
             uptime: { type: 'number', example: 3600 }
           }
         },
-        // Modelos de autenticação
-        LoginRequest: {
+        // Modelos de autenticação - App Users (Phone + PIN)
+        LoginPhoneRequest: {
           type: 'object',
-          required: ['email', 'password'],
+          required: ['telefone', 'pin'],
           properties: {
-            email: { type: 'string', format: 'email', example: 'usuario@exemplo.com' },
-            password: { type: 'string', format: 'password', example: 'senha123' }
+            telefone: { type: 'string', example: '(11) 98765-4321' },
+            pin: { type: 'string', example: '123456' }
           }
         },
+        // Modelos de autenticação - Admin e Affiliate (CPF + senha)
+        LoginCpfRequest: {
+          type: 'object',
+          required: ['cpf', 'senha'],
+          properties: {
+            cpf: { type: 'string', example: '123.456.789-00' },
+            senha: { type: 'string', format: 'password', example: 'senha123' }
+          }
+        },
+        // Modelo de resposta de autenticação comum
         LoginResponse: {
           type: 'object',
           properties: {
@@ -167,6 +209,7 @@ const swaggerOptions: swaggerJSDoc.Options = {
                     id: { type: 'string', format: 'uuid' },
                     nome: { type: 'string' },
                     email: { type: 'string', format: 'email' },
+                    source: { type: 'string', enum: ['phone', 'admin', 'affiliate'] },
                     role: {
                       type: 'object',
                       properties: {
@@ -202,66 +245,203 @@ const swaggerOptions: swaggerJSDoc.Options = {
             }
           }
         },
-        // Modelos de usuário
-        User: {
+        // Modelos de usuário - App (UserPhone)
+        UserPhone: {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
-            cpf: { type: 'string', example: '123.456.789-00' },
             nome: { type: 'string', example: 'Nome do Usuário' },
-            telefone: { type: 'string', example: '(11) 98765-4321' },
             email: { type: 'string', format: 'email', example: 'usuario@exemplo.com' },
+            telefone: { type: 'string', example: '(11) 98765-4321' },
+            cpf: { type: 'string', example: '123.456.789-00' },
+            endereco: { type: 'string', example: 'Rua Exemplo, 123' },
             avatar: { type: 'string', format: 'uri', nullable: true },
             cidade: { type: 'string', example: 'São Paulo' },
             estado: { type: 'string', example: 'SP' },
             role: { $ref: '#/components/schemas/Role' },
             status: { $ref: '#/components/schemas/Status' },
             createdAt: { type: 'string', format: 'date-time' },
-            updatedAt: { type: 'string', format: 'date-time' }
+            updatedAt: { type: 'string', format: 'date-time' },
+            lastLoginAt: { type: 'string', format: 'date-time', nullable: true }
           }
         },
-        CreateUserRequest: {
+        CreateUserPhoneRequest: {
           type: 'object',
-          required: ['cpf', 'nome', 'telefone', 'email', 'senha', 'cidade', 'estado', 'roleId', 'statusId'],
+          required: ['nome', 'email', 'telefone', 'cpf', 'endereco', 'cidade', 'estado', 'pin', 'roleId', 'statusId'],
           properties: {
-            cpf: { type: 'string', example: '123.456.789-00' },
             nome: { type: 'string', example: 'Nome do Usuário' },
-            telefone: { type: 'string', example: '(11) 98765-4321' },
             email: { type: 'string', format: 'email', example: 'usuario@exemplo.com' },
-            senha: { type: 'string', format: 'password', example: 'senha123' },
-            avatar: { type: 'string', format: 'uri', nullable: true },
+            telefone: { type: 'string', example: '(11) 98765-4321' },
+            cpf: { type: 'string', example: '123.456.789-00' },
+            endereco: { type: 'string', example: 'Rua Exemplo, 123' },
             cidade: { type: 'string', example: 'São Paulo' },
             estado: { type: 'string', example: 'SP' },
+            pin: { type: 'string', example: '123456' },
+            avatar: { type: 'string', format: 'uri', nullable: true },
             roleId: { type: 'string', format: 'uuid' },
             statusId: { type: 'string', format: 'uuid' }
           }
         },
-        UpdateUserRequest: {
+        UpdateUserPhoneRequest: {
           type: 'object',
           properties: {
-            cpf: { type: 'string', example: '123.456.789-00' },
             nome: { type: 'string', example: 'Nome do Usuário' },
-            telefone: { type: 'string', example: '(11) 98765-4321' },
             email: { type: 'string', format: 'email', example: 'usuario@exemplo.com' },
-            senha: { type: 'string', format: 'password', example: 'senha123' },
-            avatar: { type: 'string', format: 'uri', nullable: true },
+            telefone: { type: 'string', example: '(11) 98765-4321' },
+            cpf: { type: 'string', example: '123.456.789-00' },
+            endereco: { type: 'string', example: 'Rua Exemplo, 123' },
             cidade: { type: 'string', example: 'São Paulo' },
             estado: { type: 'string', example: 'SP' },
+            pin: { type: 'string', example: '123456' },
+            avatar: { type: 'string', format: 'uri', nullable: true },
             roleId: { type: 'string', format: 'uuid' },
             statusId: { type: 'string', format: 'uuid' }
           }
         },
-        UserListResponse: {
+        // Modelos de usuário - Admin (UserAdmin)
+        UserAdmin: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            nome: { type: 'string', example: 'Nome do Administrador' },
+            email: { type: 'string', format: 'email', example: 'admin@exemplo.com' },
+            telefone: { type: 'string', example: '(11) 98765-4321' },
+            cpf: { type: 'string', example: '123.456.789-00' },
+            endereco: { type: 'string', example: 'Rua Exemplo, 123' },
+            avatar: { type: 'string', format: 'uri', nullable: true },
+            cidade: { type: 'string', example: 'São Paulo' },
+            estado: { type: 'string', example: 'SP' },
+            role: { $ref: '#/components/schemas/Role' },
+            status: { $ref: '#/components/schemas/Status' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            lastLoginAt: { type: 'string', format: 'date-time', nullable: true }
+          }
+        },
+        CreateUserAdminRequest: {
+          type: 'object',
+          required: ['nome', 'email', 'telefone', 'cpf', 'endereco', 'cidade', 'estado', 'senha', 'roleId', 'statusId'],
+          properties: {
+            nome: { type: 'string', example: 'Nome do Administrador' },
+            email: { type: 'string', format: 'email', example: 'admin@exemplo.com' },
+            telefone: { type: 'string', example: '(11) 98765-4321' },
+            cpf: { type: 'string', example: '123.456.789-00' },
+            endereco: { type: 'string', example: 'Rua Exemplo, 123' },
+            cidade: { type: 'string', example: 'São Paulo' },
+            estado: { type: 'string', example: 'SP' },
+            senha: { type: 'string', format: 'password', example: 'senha123' },
+            avatar: { type: 'string', format: 'uri', nullable: true },
+            roleId: { type: 'string', format: 'uuid' },
+            statusId: { type: 'string', format: 'uuid' }
+          }
+        },
+        UpdateUserAdminRequest: {
+          type: 'object',
+          properties: {
+            nome: { type: 'string', example: 'Nome do Administrador' },
+            email: { type: 'string', format: 'email', example: 'admin@exemplo.com' },
+            telefone: { type: 'string', example: '(11) 98765-4321' },
+            cpf: { type: 'string', example: '123.456.789-00' },
+            endereco: { type: 'string', example: 'Rua Exemplo, 123' },
+            cidade: { type: 'string', example: 'São Paulo' },
+            estado: { type: 'string', example: 'SP' },
+            senha: { type: 'string', format: 'password', example: 'senha123' },
+            avatar: { type: 'string', format: 'uri', nullable: true },
+            roleId: { type: 'string', format: 'uuid' },
+            statusId: { type: 'string', format: 'uuid' }
+          }
+        },
+        // Modelos de usuário - Affiliate (UserAffiliate)
+        UserAffiliate: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            nome: { type: 'string', example: 'Nome do Afiliado' },
+            email: { type: 'string', format: 'email', example: 'afiliado@exemplo.com' },
+            telefone: { type: 'string', example: '(11) 98765-4321' },
+            cpf: { type: 'string', example: '123.456.789-00' },
+            endereco: { type: 'string', example: 'Rua Exemplo, 123' },
+            avatar: { type: 'string', format: 'uri', nullable: true },
+            cidade: { type: 'string', example: 'São Paulo' },
+            estado: { type: 'string', example: 'SP' },
+            role: { $ref: '#/components/schemas/Role' },
+            status: { $ref: '#/components/schemas/Status' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            lastLoginAt: { type: 'string', format: 'date-time', nullable: true }
+          }
+        },
+        CreateUserAffiliateRequest: {
+          type: 'object',
+          required: ['nome', 'email', 'telefone', 'cpf', 'endereco', 'cidade', 'estado', 'senha', 'roleId', 'statusId'],
+          properties: {
+            nome: { type: 'string', example: 'Nome do Afiliado' },
+            email: { type: 'string', format: 'email', example: 'afiliado@exemplo.com' },
+            telefone: { type: 'string', example: '(11) 98765-4321' },
+            cpf: { type: 'string', example: '123.456.789-00' },
+            endereco: { type: 'string', example: 'Rua Exemplo, 123' },
+            cidade: { type: 'string', example: 'São Paulo' },
+            estado: { type: 'string', example: 'SP' },
+            senha: { type: 'string', format: 'password', example: 'senha123' },
+            avatar: { type: 'string', format: 'uri', nullable: true },
+            roleId: { type: 'string', format: 'uuid' },
+            statusId: { type: 'string', format: 'uuid' }
+          }
+        },
+        UpdateUserAffiliateRequest: {
+          type: 'object',
+          properties: {
+            nome: { type: 'string', example: 'Nome do Afiliado' },
+            email: { type: 'string', format: 'email', example: 'afiliado@exemplo.com' },
+            telefone: { type: 'string', example: '(11) 98765-4321' },
+            cpf: { type: 'string', example: '123.456.789-00' },
+            endereco: { type: 'string', example: 'Rua Exemplo, 123' },
+            cidade: { type: 'string', example: 'São Paulo' },
+            estado: { type: 'string', example: 'SP' },
+            senha: { type: 'string', format: 'password', example: 'senha123' },
+            avatar: { type: 'string', format: 'uri', nullable: true },
+            roleId: { type: 'string', format: 'uuid' },
+            statusId: { type: 'string', format: 'uuid' }
+          }
+        },
+        // Respostas de listagem paginada
+        UserPhoneListResponse: {
           type: 'object',
           properties: {
             data: { 
               type: 'array', 
-              items: { $ref: '#/components/schemas/User' } 
+              items: { $ref: '#/components/schemas/UserPhone' } 
             },
-            total: { type: 'integer', example: 100 },
+            total: { type: 'integer', example: 50 },
             page: { type: 'integer', example: 1 },
             limit: { type: 'integer', example: 10 },
-            totalPages: { type: 'integer', example: 10 }
+            totalPages: { type: 'integer', example: 5 }
+          }
+        },
+        UserAdminListResponse: {
+          type: 'object',
+          properties: {
+            data: { 
+              type: 'array', 
+              items: { $ref: '#/components/schemas/UserAdmin' } 
+            },
+            total: { type: 'integer', example: 15 },
+            page: { type: 'integer', example: 1 },
+            limit: { type: 'integer', example: 10 },
+            totalPages: { type: 'integer', example: 2 }
+          }
+        },
+        UserAffiliateListResponse: {
+          type: 'object',
+          properties: {
+            data: { 
+              type: 'array', 
+              items: { $ref: '#/components/schemas/UserAffiliate' } 
+            },
+            total: { type: 'integer', example: 35 },
+            page: { type: 'integer', example: 1 },
+            limit: { type: 'integer', example: 10 },
+            totalPages: { type: 'integer', example: 4 }
           }
         },
         // Modelos de perfil (role)
@@ -468,7 +648,203 @@ const swaggerOptions: swaggerJSDoc.Options = {
     },
     security: [
       { bearerAuth: [] }
-    ]
+    ],
+    paths: {
+      // Autenticação
+      '/auth/login/phone': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Login para usuários de app',
+          description: 'Realiza a autenticação de um usuário de app (phone + PIN)',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/LoginPhoneRequest'
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Autenticação realizada com sucesso',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/LoginResponse'
+                  }
+                }
+              }
+            },
+            401: {
+              description: 'Credenciais inválidas ou conta bloqueada',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      status: { type: 'string', example: 'error' },
+                      message: { type: 'string', example: 'Credenciais inválidas' }
+                    }
+                  }
+                }
+              }
+            },
+            400: {
+              $ref: '#/components/responses/ValidationError'
+            },
+            429: {
+              $ref: '#/components/responses/TooManyRequestsError'
+            }
+          }
+        }
+      },
+      '/auth/login/admin': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Login para usuários administrativos',
+          description: 'Realiza a autenticação de um usuário administrativo (CPF + senha)',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/LoginCpfRequest'
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Autenticação realizada com sucesso',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/LoginResponse'
+                  }
+                }
+              }
+            },
+            401: {
+              description: 'Credenciais inválidas ou conta bloqueada',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      status: { type: 'string', example: 'error' },
+                      message: { type: 'string', example: 'Credenciais inválidas' }
+                    }
+                  }
+                }
+              }
+            },
+            400: {
+              $ref: '#/components/responses/ValidationError'
+            },
+            429: {
+              $ref: '#/components/responses/TooManyRequestsError'
+            }
+          }
+        }
+      },
+      '/auth/login/affiliate': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Login para usuários afiliados',
+          description: 'Realiza a autenticação de um usuário afiliado (CPF + senha)',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/LoginCpfRequest'
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Autenticação realizada com sucesso',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/LoginResponse'
+                  }
+                }
+              }
+            },
+            401: {
+              description: 'Credenciais inválidas ou conta bloqueada',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      status: { type: 'string', example: 'error' },
+                      message: { type: 'string', example: 'Credenciais inválidas' }
+                    }
+                  }
+                }
+              }
+            },
+            400: {
+              $ref: '#/components/responses/ValidationError'
+            },
+            429: {
+              $ref: '#/components/responses/TooManyRequestsError'
+            }
+          }
+        }
+      },
+      '/auth/refresh': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Atualizar token de acesso',
+          description: 'Utiliza um refresh token válido para obter um novo token de acesso',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/RefreshTokenRequest'
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Token atualizado com sucesso',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/RefreshTokenResponse'
+                  }
+                }
+              }
+            },
+            400: {
+              $ref: '#/components/responses/ValidationError'
+            },
+            401: {
+              description: 'Refresh token inválido ou expirado',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      status: { type: 'string', example: 'error' },
+                      message: { type: 'string', example: 'Refresh token inválido ou expirado' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   },
   apis: [
     './src/routes.ts',
