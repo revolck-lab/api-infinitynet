@@ -1,135 +1,53 @@
-import { config } from "../../config";
+// shared/services/logger.service.ts (versão compatível)
+import { config } from '../../config';
 
-/**
- * Níveis de log disponíveis
- */
-type LogLevel = "error" | "warn" | "info" | "debug" | "trace";
-
-/**
- * Interface para mensagens de log
- */
-interface LogMessage {
-  level: LogLevel;
-  message: string;
-  timestamp: string;
-  [key: string]: any;
-}
-
-/**
- * Serviço de logging estruturado com suporte a diferentes níveis
- * e formatação para desenvolvimento/produção
- */
-class Logger {
-  private static instance: Logger;
-
-  /**
-   * Mapa para conversão do nível de log para valor numérico
-   * para comparação de importância
-   */
-  private readonly levelPriority: Record<LogLevel, number> = {
-    error: 0,
-    warn: 1,
-    info: 2,
-    debug: 3,
-    trace: 4,
-  };
-
-  /**
-   * Nível configurado para o logger
-   */
-  private readonly configuredLevel: LogLevel =
-    (config.log.level as LogLevel) || "info";
-
-  /**
-   * Verifica se o nível está habilitado com base na configuração
-   */
-  private isLevelEnabled(level: LogLevel): boolean {
-    return (
-      this.levelPriority[level] <= this.levelPriority[this.configuredLevel]
-    );
-  }
+class EnhancedLogger {
+  private static instance: EnhancedLogger;
 
   /**
    * Formata a mensagem de log
    */
-  private formatMessage(logObj: LogMessage): string {
+  private formatMessage(level: string, message: string, meta: any = {}): string {
+    const timestamp = new Date().toISOString();
     if (config.log.prettyPrint) {
       // Formato mais legível para desenvolvimento
-      return `[${logObj.timestamp}] ${logObj.level.toUpperCase()}: ${
-        logObj.message
-      } ${logObj.data ? `\n${JSON.stringify(logObj.data, null, 2)}` : ""}`;
+      return `[${timestamp}] ${level.toUpperCase()}: ${message} ${
+        Object.keys(meta).length > 0 ? `\n${JSON.stringify(meta, null, 2)}` : ""
+      }`;
     }
 
-    // Formato JSON para produção (facilita a integração com ferramentas de log)
-    return JSON.stringify(logObj);
-  }
-
-  /**
-   * Cria uma mensagem de log
-   */
-  private log(level: LogLevel, message: string, data?: any): void {
-    if (!this.isLevelEnabled(level)) return;
-
-    const logObj: LogMessage = {
+    // Formato JSON para produção
+    return JSON.stringify({
       level,
       message,
-      timestamp: new Date().toISOString(),
-      ...(data && { data }),
-    };
+      timestamp,
+      service: 'api-infinitynet',
+      ...meta
+    });
+  }
 
-    // Em ambiente de produção, vamos escrever erros no stderr e o resto em stdout
-    if (level === "error") {
-      console.error(this.formatMessage(logObj));
-    } else {
-      console.log(this.formatMessage(logObj));
+  public error(message: string, meta: any = {}): void {
+    console.error(this.formatMessage('error', message, meta));
+  }
+
+  public warn(message: string, meta: any = {}): void {
+    console.warn(this.formatMessage('warn', message, meta));
+  }
+
+  public info(message: string, meta: any = {}): void {
+    console.info(this.formatMessage('info', message, meta));
+  }
+
+  public debug(message: string, meta: any = {}): void {
+    console.debug(this.formatMessage('debug', message, meta));
+  }
+
+  public static getInstance(): EnhancedLogger {
+    if (!EnhancedLogger.instance) {
+      EnhancedLogger.instance = new EnhancedLogger();
     }
-  }
-
-  /**
-   * Registra uma mensagem de erro
-   */
-  public error(message: string, data?: any): void {
-    this.log("error", message, data);
-  }
-
-  /**
-   * Registra uma mensagem de aviso
-   */
-  public warn(message: string, data?: any): void {
-    this.log("warn", message, data);
-  }
-
-  /**
-   * Registra uma mensagem informativa
-   */
-  public info(message: string, data?: any): void {
-    this.log("info", message, data);
-  }
-
-  /**
-   * Registra uma mensagem de depuração
-   */
-  public debug(message: string, data?: any): void {
-    this.log("debug", message, data);
-  }
-
-  /**
-   * Registra uma mensagem de rastreamento detalhada
-   */
-  public trace(message: string, data?: any): void {
-    this.log("trace", message, data);
-  }
-
-  /**
-   * Obtém a instância única do logger (Singleton)
-   */
-  public static getInstance(): Logger {
-    if (!Logger.instance) {
-      Logger.instance = new Logger();
-    }
-    return Logger.instance;
+    return EnhancedLogger.instance;
   }
 }
 
-// Exporta a instância única do logger
-export const logger = Logger.getInstance();
+export const logger = EnhancedLogger.getInstance();

@@ -14,6 +14,13 @@ dotenv.config({
  * Todas as variáveis de ambiente e constantes de configuração devem estar aqui
  */
 export const config = {
+  // Adicione esta nova seção para Redis
+  redis: {
+    url: process.env.REDIS_URL || 'redis://localhost:6379',
+    // Tempo de expiração padrão para cache
+    defaultExpiry: 3600, // 1 hora em segundos
+  },
+
   // Servidor
   server: {
     port: parseInt(process.env.PORT || "3000", 10),
