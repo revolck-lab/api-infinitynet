@@ -4,15 +4,17 @@
   "description": "API REST com Node.js e TypeScript em uma arquitetura modular",
   "main": "dist/server.js",
   "scripts": {
+    "prebuild": "node scripts/copy-static.js --build",
     "build": "tsc --skipLibCheck",
     "start": "node dist/server.js",
+    "predev": "node scripts/copy-static.js",
     "dev": "nodemon src/server.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts",
-    "render-build": "npm install && npx prisma generate && tsc --skipLibCheck"
+    "render-build": "npm install && npx prisma generate && node scripts/copy-static.js --build && tsc --skipLibCheck"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
