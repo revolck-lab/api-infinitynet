@@ -1,4 +1,3 @@
-// src/shared/swagger/swagger.config.ts
 import swaggerJSDoc from 'swagger-jsdoc';
 import { version } from '../../../package.json';
 import { config } from '../../config';

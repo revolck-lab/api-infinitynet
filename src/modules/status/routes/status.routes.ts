@@ -1,6 +1,6 @@
 import { Router } from "express";
 import statusController from "../controllers/StatusController";
-import { authMiddleware } from "../../../shared/middlewares/auth.middleware";
+import { jwtMiddleware } from "../../../shared/middlewares/auth.middleware";
 
 const statusRoutes = Router();
 
@@ -9,8 +9,8 @@ statusRoutes.get("/", statusController.getAllStatuses);
 statusRoutes.get("/:id", statusController.getStatusById);
 
 // Rotas protegidas por autenticação
-statusRoutes.post("/", authMiddleware, statusController.createStatus);
-statusRoutes.put("/:id", authMiddleware, statusController.updateStatus);
-statusRoutes.delete("/:id", authMiddleware, statusController.deleteStatus);
+statusRoutes.post("/", jwtMiddleware, statusController.createStatus);
+statusRoutes.put("/:id", jwtMiddleware, statusController.updateStatus);
+statusRoutes.delete("/:id", jwtMiddleware, statusController.deleteStatus);
 
 export { statusRoutes };
